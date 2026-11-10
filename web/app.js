@@ -5,13 +5,23 @@ let incomingMeta = null, incomingParts = [], incomingSize = 0, receivedBlob = nu
 
 function status(id, message) { $(id).textContent = message; }
 function setProgress(id, value) { $(id).style.width = `${Math.max(0, Math.min(100, value))}%`; }
-function waitIce(pc) {
-  if (pc.iceGatheringState === 'complete') return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('ICE gathering timed out. Try again.')), 25000);
-    pc.addEventListener('icegatheringstatechange', () => {
-      if (pc.iceGatheringState === 'complete') { clearTimeout(timer); resolve(); }
-    });
+function waitIce(pc, timeoutMs = 18000) {
+  // ICE gathering can take longer than expected on mobile or restrictive networks.
+  // Never block creation of the answer indefinitely: return the latest SDP on timeout.
+  if (pc.iceGatheringState === 'complete') return Promise.resolve(true);
+  return new Promise(resolve => {
+    let settled = false;
+    const finish = complete => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      pc.removeEventListener('icegatheringstatechange', onChange);
+      resolve(complete);
+    };
+    const onChange = () => { if (pc.iceGatheringState === 'complete') finish(true); };
+    const timer = setTimeout(() => finish(false), timeoutMs);
+    pc.addEventListener('icegatheringstatechange', onChange);
+    onChange();
   });
 }
 function encodeDescription(desc) { return JSON.stringify({ type: desc.type, sdp: desc.sdp }); }
@@ -50,9 +60,9 @@ $('create-offer').addEventListener('click', async () => {
     senderChannel.binaryType='arraybuffer';
     senderChannel.bufferedAmountLowThreshold=CHUNK*8;
     senderPC.onconnectionstatechange=()=>status('sender-status',`Connection: ${senderPC.connectionState}`);
-    const offer=await senderPC.createOffer(); await senderPC.setLocalDescription(offer); await waitIce(senderPC);
-    $('offer-out').value=encodeDescription(senderPC.localDescription); $('copy-offer').disabled=false; $('connect-sender').disabled=false;
-    status('sender-status','Offer ready. Copy it to the receiver, then paste their answer below.');
+    const offer=await senderPC.createOffer(); await senderPC.setLocalDescription(offer); const gathered = await waitIce(senderPC);
+    $('offer-out').value=encodeDescription(senderPC.localDescription); $('copy-offer').disabled=false; $('show-offer-qr').disabled=false; $('connect-sender').disabled=false;
+    status('sender-status', gathered ? 'Offer ready. Share it with the receiver.' : 'Offer ready with available ICE candidates. If connection fails, retry on another network or use a TURN-enabled peer.');
   } catch(e) { status('sender-status',e.message); }
   finally { $('create-offer').disabled=false; }
 });
@@ -71,9 +81,9 @@ $('create-answer').addEventListener('click', async () => {
     };
     receiverPC.onconnectionstatechange=()=>status('receiver-status',`Connection: ${receiverPC.connectionState}`);
     await receiverPC.setRemoteDescription(decodeDescription($('offer-in').value.trim()));
-    const answer=await receiverPC.createAnswer(); await receiverPC.setLocalDescription(answer); await waitIce(receiverPC);
-    $('answer-out').value=encodeDescription(receiverPC.localDescription); $('copy-answer').disabled=false;
-    status('receiver-status','Answer ready. Send it back to the sender.');
+    const answer=await receiverPC.createAnswer(); await receiverPC.setLocalDescription(answer); const gathered = await waitIce(receiverPC);
+    $('answer-out').value=encodeDescription(receiverPC.localDescription); $('copy-answer').disabled=false; $('show-answer-qr').disabled=false;
+    status('receiver-status', gathered ? 'Answer ready. Share it with the sender.' : 'Answer generated with available ICE candidates. Share it now; if connection fails, retry on another network.');
   } catch(e) { status('receiver-status',e.message); }
   finally { $('create-answer').disabled=false; }
 });
@@ -128,5 +138,67 @@ function finishIncoming() {
   $('copy-received').classList.toggle('hidden',!(incomingMeta.type||'').startsWith('text/'));
   $('received').classList.remove('hidden'); status('receiver-status','Transfer complete.'); incomingMeta=null; incomingParts=[];
 }
+
+
+// QR signaling: either side can display its code or scan the other peer's code.
+let qrScannerStream = null, qrScannerTimer = null;
+function showQr(value, title) {
+  if (!value) throw new Error('There is no connection code to show yet.');
+  $('qr-title').textContent = title;
+  $('qr-code').replaceChildren();
+  if (typeof QRCode === 'undefined') throw new Error('QR generator did not load. Check your internet connection or use Copy.');
+  new QRCode($('qr-code'), { text: value, width: 280, height: 280, correctLevel: QRCode.CorrectLevel.L });
+  $('qr-modal').classList.remove('hidden');
+}
+function closeQr() { $('qr-modal').classList.add('hidden'); }
+function stopScanner() {
+  if (qrScannerTimer) clearInterval(qrScannerTimer);
+  qrScannerTimer = null;
+  if (qrScannerStream) qrScannerStream.getTracks().forEach(track => track.stop());
+  qrScannerStream = null;
+  $('qr-video').srcObject = null;
+  $('scanner').classList.add('hidden');
+}
+async function startScanner(targetId, statusId) {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    status(statusId, 'Camera scanning requires HTTPS and camera permission. You can paste the code instead.');
+    return;
+  }
+  try {
+    stopScanner();
+    $('scanner-title').textContent = targetId === 'offer-in' ? 'Scan sender offer' : 'Scan receiver answer';
+    $('scanner').classList.remove('hidden');
+    qrScannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    const video = $('qr-video'); video.srcObject = qrScannerStream; await video.play();
+    const canvas = $('qr-canvas'), ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (typeof jsQR === 'undefined') throw new Error('QR scanner did not load. Check your internet connection or paste the code.');
+    qrScannerTimer = setInterval(() => {
+      if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const result = jsQR(frame.data, frame.width, frame.height, { inversionAttempts: 'attemptBoth' });
+      if (result?.data) {
+        try {
+          decodeDescription(result.data);
+          $(targetId).value = result.data;
+          stopScanner();
+          status(statusId, 'QR scanned. Continue to create the answer or connect.');
+        } catch { status(statusId, 'QR detected, but it is not a valid Paste Anywhere connection code.'); }
+      }
+    }, 180);
+  } catch (e) {
+    stopScanner();
+    status(statusId, e.message || 'Unable to access camera. Paste the code manually.');
+  }
+}
+$('show-offer-qr').addEventListener('click', () => { try { showQr($('offer-out').value, 'Scan this offer on the receiving device'); } catch(e) { status('sender-status', e.message); } });
+$('show-answer-qr').addEventListener('click', () => { try { showQr($('answer-out').value, 'Scan this answer on the sending device'); } catch(e) { status('receiver-status', e.message); } });
+$('scan-offer-qr').addEventListener('click', () => startScanner('offer-in', 'receiver-status'));
+$('scan-answer-qr').addEventListener('click', () => startScanner('answer-in', 'sender-status'));
+$('close-qr').addEventListener('click', closeQr);
+$('close-scanner').addEventListener('click', stopScanner);
+$('qr-modal').addEventListener('click', e => { if (e.target === $('qr-modal')) closeQr(); });
+
 $('copy-received').addEventListener('click',async()=>{if(receivedBlob)try{await navigator.clipboard.writeText(await receivedBlob.text());$('copy-received').textContent='Copied ✓';}catch{status('receiver-status','Clipboard access was blocked.');}});
-window.addEventListener('beforeunload',()=>{senderPC?.close();receiverPC?.close();});
+window.addEventListener('beforeunload',()=>{stopScanner();senderPC?.close();receiverPC?.close();});

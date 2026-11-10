@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <style>
-    .p2p-note{border:1px solid #303747;background:#151a24;border-radius:12px;padding:13px 15px;color:#b9c3d5;font-size:13px;line-height:1.6;margin:22px 0}
+    .modal{position:fixed;inset:0;z-index:50;background:#05070bdc;display:grid;place-items:center;padding:20px}.modal-card{position:relative;width:min(420px,100%);background:#151a24;border:1px solid #303747;border-radius:18px;padding:24px;text-align:center;box-shadow:0 20px 80px #0009}.modal-card h2{margin:4px 0 8px}.modal-close{position:absolute;right:12px;top:8px;border:0;background:transparent;color:#dce5f4;font-size:28px;cursor:pointer}.qr-code{display:grid;place-items:center;background:white;padding:14px;border-radius:12px;width:max-content;max-width:100%;margin:18px auto}.qr-code img,.qr-code canvas{max-width:100%;height:auto}#qr-video{width:100%;max-height:60vh;background:#05070b;border-radius:12px;margin-top:12px}.p2p-note{border:1px solid #303747;background:#151a24;border-radius:12px;padding:13px 15px;color:#b9c3d5;font-size:13px;line-height:1.6;margin:22px 0}
     .p2p-note strong{color:#e9eef8}.flow{display:grid;grid-template-columns:1fr 1fr;gap:16px}.flow .panel{min-width:0}
     .field-label{display:block;margin:18px 0 8px}.signal{width:100%;min-height:110px;resize:vertical;background:#0d1119;color:#dce5f4;border:1px solid #303747;border-radius:10px;padding:12px;font:12px 'DM Mono',monospace;overflow-wrap:anywhere}
     .signal:focus,.pin-input:focus,textarea:focus{outline:2px solid #829cf8;outline-offset:2px}.action-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}.secondary-button,.primary-button{cursor:pointer}.secondary-button:disabled,.primary-button:disabled{opacity:.5;cursor:not-allowed}
@@ -33,7 +33,7 @@
         <label class="field-label" for="send-file">OR CHOOSE A FILE</label><input class="file-input" id="send-file" type="file">
         <button class="primary-button" id="create-offer"><span>Create offer</span><span class="button-arrow">↗</span></button>
         <label class="field-label" for="offer-out">YOUR OFFER — copy to receiver</label><textarea class="signal" id="offer-out" readonly placeholder="Your offer appears here…"></textarea>
-        <div class="action-row"><button class="secondary-button" id="copy-offer" disabled>Copy offer</button></div>
+        <div class="action-row"><button class="secondary-button" id="copy-offer" disabled>Copy offer</button><button class="secondary-button" id="show-offer-qr" disabled>Show QR</button><button class="secondary-button" id="scan-answer-qr">Scan answer QR</button></div>
         <label class="field-label" for="answer-in">RECEIVER'S ANSWER — paste here</label><textarea class="signal" id="answer-in" placeholder="Paste the answer from the receiver…"></textarea>
         <div class="action-row"><button class="primary-button" id="connect-sender" disabled><span>Connect & send</span><span class="button-arrow">↗</span></button></div>
         <div class="status" id="sender-status" role="status">Not connected.</div><div class="progress"><div id="send-progress"></div></div>
@@ -44,7 +44,7 @@
         <label class="field-label" for="offer-in">SENDER'S OFFER</label><textarea class="signal" id="offer-in" placeholder="Paste the offer from the sender…"></textarea>
         <button class="primary-button" id="create-answer" style="margin-top:10px"><span>Create answer</span><span class="button-arrow">↗</span></button>
         <label class="field-label" for="answer-out">YOUR ANSWER — send to sender</label><textarea class="signal" id="answer-out" readonly placeholder="Your answer appears here…"></textarea>
-        <div class="action-row"><button class="secondary-button" id="copy-answer" disabled>Copy answer</button></div>
+        <div class="action-row"><button class="secondary-button" id="copy-answer" disabled>Copy answer</button><button class="secondary-button" id="show-answer-qr" disabled>Show QR</button><button class="secondary-button" id="scan-offer-qr">Scan offer QR</button></div>
         <div class="status" id="receiver-status" role="status">Waiting for sender…</div>
         <div id="received" class="hidden" style="margin-top:18px"><div class="success-label"><span class="live-dot"></span> TRANSFER RECEIVED</div><p id="received-name" class="retrieved-name"></p><div id="received-preview" class="preview"></div><a id="download" class="secondary-button download-link" href="#" download>Download file</a><button class="secondary-button" id="copy-received" style="margin-left:8px">Copy text</button></div>
       </section>
@@ -52,5 +52,13 @@
     <section class="how"><div><span class="step-number">01</span><strong>Create offer</strong><span>Sender creates a one-time connection code.</span></div><div><span class="step-number">02</span><strong>Exchange codes</strong><span>Copy offer and answer between devices.</span></div><div><span class="step-number">03</span><strong>Transfer directly</strong><span>WebRTC sends encrypted data device-to-device.</span></div></section>
   </main>
   <footer><span>PASTE ANYWHERE</span><span>WEBRTC · END-TO-END ENCRYPTED · NO FILE SERVER</span></footer>
+  <div id="qr-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="qr-title">
+    <div class="modal-card"><button class="modal-close" id="close-qr" aria-label="Close">×</button><h2 id="qr-title">Connection QR</h2><p class="helper">Keep this screen open and scan it from the other device.</p><div id="qr-code" class="qr-code"></div></div>
+  </div>
+  <div id="scanner" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="scanner-title">
+    <div class="modal-card"><button class="modal-close" id="close-scanner" aria-label="Close">×</button><h2 id="scanner-title">Scan connection QR</h2><p class="helper">Allow camera access and point it at the other device's QR code.</p><video id="qr-video" playsinline muted></video><canvas id="qr-canvas" class="hidden"></canvas></div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script src="app.js"></script>
 </body></html>
