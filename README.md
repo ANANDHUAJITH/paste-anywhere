@@ -5,10 +5,10 @@ A static, browser-based text and file transfer app. It uses **WebRTC DataChannel
 ## How it works
 
 1. Open the site on both devices.
-2. On the sending device, choose text or a file, pick any **username and password (6+ characters each)**, and click **Start sharing**.
-3. Tell the receiving device the same username and password (text it, say it out loud — anything's fine, it's just a shared secret for pairing, not a real account).
-4. On the receiving device, type the same username and password and click **Connect & receive**.
-5. The app hashes the username+password into a short room id and uses that to find the matching peer through the public [PeerJS](https://peerjs.com) signaling broker. Once the two browsers find each other, the payload travels directly between them over an encrypted WebRTC data channel — the broker only helps them connect, it never sees the file.
+2. On each device, type the exact same **username and password (6+ characters each)** and click **Connect**. It doesn't matter which device clicks first — whichever one gets there first opens the room, the other one joins it automatically.
+3. Once connected, a shared "live clipboard" text box appears on both sides. Anything typed or pasted into it on either device shows up on the other device as you type, live, for as long as the connection is open.
+4. You can also pick a file and click **Send file** at any point while connected — it goes straight to the other device over the same direct connection, with a progress bar and a preview/download card on the receiving side. Either side can send a file, any number of times, independent of the live text sync.
+5. The app hashes the username+password into a short room id and uses that to find the matching peer through the public [PeerJS](https://peerjs.com) signaling broker. Once the two browsers find each other, everything — text sync and files — travels directly between them over an encrypted WebRTC data channel; the broker only helps them find each other, it never sees the content.
 
 ### Why a username & password instead of copy/paste codes
 
@@ -45,8 +45,8 @@ Open http://localhost:8080.
 - The username & password are a pairing convenience, not real authentication — anyone with the same two values can join that room while the sender is sharing. Don't reuse a password you care about, and don't treat this as access control.
 - A public STUN service and the public PeerJS signaling broker are contacted for peer discovery/pairing; neither receives the file payload, only connection metadata.
 - No TURN fallback means some network combinations cannot connect.
-- The current UI transfers one file or text payload per connection, with a 500 MB sender-side limit. Browser memory and device capabilities may impose lower practical limits.
-- Keep both tabs open until the transfer completes. Closing either tab ends the connection.
+- Files are limited to 500 MB each on the sending side; send one at a time and wait for it to finish before starting the next. Browser memory and device capabilities may impose lower practical limits.
+- Keep both tabs open for as long as you want text to keep syncing or files to transfer. Closing either tab ends the connection; click Connect again on both sides to start a new session.
 - Use HTTPS in production. GitHub Pages provides HTTPS.
 
 ## Repository layout

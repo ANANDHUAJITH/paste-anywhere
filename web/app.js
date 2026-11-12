@@ -2,17 +2,22 @@ const $ = id => document.getElementById(id);
 const CHUNK = 16 * 1024;
 const ICE = [{ urls: 'stun:stun.l.google.com:19302' }];
 
-let senderPeer = null, senderConn = null, outgoing = null;
-let receiverPeer = null, receiverConn = null;
-let incomingMeta = null, incomingParts = [], incomingSize = 0, receivedBlob = null;
+let peer = null, conn = null, role = null; // role: 'host' | 'guest'
+let applyingRemoteText = false, textDebounce = null;
+let outgoing = null, sending = false;
+let incomingMeta = null, incomingParts = [], incomingSize = 0;
 
-function status(id, message) { $(id).textContent = message; }
+function setStatus(message, state) {
+  $('room-status').textContent = message;
+  const dot = $('room-dot');
+  dot.className = 'dot' + (state ? ' ' + state : '');
+}
 function setProgress(id, value) { $(id).style.width = `${Math.max(0, Math.min(100, value))}%`; }
 
-// The username+password pair is hashed into a short room id. Any two devices
-// that enter the same username & password land on the same room id, which is
-// how they find each other on the public PeerJS signaling broker — no manual
-// codes, no QR codes, no copy/paste.
+// The username+password pair is hashed into a short, stable room id. Any two
+// devices that enter the same username & password land on the same room id,
+// so they find each other on the public PeerJS signaling broker automatically
+// — no manual codes, no QR codes, no copy/paste of connection text.
 async function roomId(username, password) {
   const data = new TextEncoder().encode(`paste-anywhere:${username.trim().toLowerCase()}:${password}`);
   const digest = await crypto.subtle.digest('SHA-256', data);
@@ -32,176 +37,243 @@ function randomCreds() {
 }
 $('generate-creds').addEventListener('click', () => {
   const { username, password } = randomCreds();
-  $('send-username').value = username; $('send-password').value = password;
-  status('sender-status', 'Generated. Share these two values with the receiver, then click Start sharing.');
+  $('room-username').value = username; $('room-password').value = password;
+  setStatus('Generated. Tell the other device these two values, then Connect on both.');
+});
+$('copy-creds').addEventListener('click', async () => {
+  const username = $('room-username').value, password = $('room-password').value;
+  if (!username && !password) return;
+  try { await navigator.clipboard.writeText(`${username} / ${password}`); const b = $('copy-creds'); const old = b.textContent; b.textContent = 'Copied ✓'; setTimeout(() => b.textContent = old, 1200); }
+  catch { setStatus('Clipboard unavailable — copy manually.', 'err'); }
 });
 
 function friendlyPeerError(err) {
   const type = err && err.type;
-  if (type === 'unavailable-id') return 'That username & password are already sharing something right now. Pick a different password, or wait for the other share to finish.';
-  if (type === 'peer-unavailable') return 'No active share found for that username & password yet. Make sure the sender clicked "Start sharing" first, and that both sides typed the exact same values.';
+  if (type === 'peer-unavailable') return 'Could not reach the other device. Make sure it also clicked Connect with the exact same username & password.';
   if (type === 'network' || type === 'server-error' || type === 'socket-error' || type === 'disconnected') return 'Could not reach the signaling service. Check your connection and try again.';
   return (err && err.message) || 'Connection error.';
 }
 
-// ---------- Sender ----------
-$('start-share').addEventListener('click', async () => {
+// ---------- Connect (symmetric: first device opens the room, second joins it) ----------
+$('connect-room').addEventListener('click', async () => {
   try {
-    const username = $('send-username').value, password = $('send-password').value;
+    const username = $('room-username').value, password = $('room-password').value;
     validateCreds(username, password);
-    const file = $('send-file').files[0], text = $('send-text').value;
-    if (!file && !text) throw new Error('Enter text or choose a file first.');
-    if (file && file.size > 500 * 1024 * 1024) throw new Error('For reliability, this demo limits files to 500 MB.');
-    outgoing = file
-      ? { name: file.name, type: file.type || 'application/octet-stream', size: file.size, blob: file }
-      : { name: 'pasted-text.txt', type: 'text/plain;charset=utf-8', size: new Blob([text]).size, blob: new Blob([text], { type: 'text/plain;charset=utf-8' }) };
-
-    $('start-share').disabled = true;
-    status('sender-status', 'Opening room…');
+    $('connect-room').disabled = true;
+    setStatus('Opening room…', 'connecting');
     const id = await roomId(username, password);
-    senderPeer?.destroy();
-    senderPeer = new Peer(id, { config: { iceServers: ICE } });
-
-    senderPeer.on('open', () => {
-      status('sender-status', 'Waiting for the receiver to connect with the same username & password…');
-    });
-    senderPeer.on('connection', conn => {
-      senderConn = conn;
-      status('sender-status', 'Receiver found. Connecting…');
-      conn.on('open', () => sendOutgoing(conn));
-      conn.on('error', e => status('sender-status', friendlyPeerError(e)));
-      conn.on('close', () => status('sender-status', 'Receiver disconnected.'));
-    });
-    senderPeer.on('error', err => {
-      status('sender-status', friendlyPeerError(err));
-      $('start-share').disabled = false;
-    });
-    senderPeer.on('disconnected', () => status('sender-status', 'Disconnected from signaling service.'));
+    openOrJoinRoom(id);
   } catch (e) {
-    status('sender-status', e.message);
-    $('start-share').disabled = false;
+    setStatus(e.message, 'err');
+    $('connect-room').disabled = false;
   }
 });
 
-async function sendOutgoing(conn) {
-  try {
-    status('sender-status', 'Connected. Sending…');
-    const blob = outgoing.blob;
-    conn.send({ kind: 'meta', name: outgoing.name, type: outgoing.type, size: outgoing.size });
-    let offset = 0;
-    const dc = conn.dataChannel;
-    while (offset < blob.size) {
-      if (conn.open === false) throw new Error('Peer disconnected during transfer.');
-      if (dc && dc.bufferedAmount > CHUNK * 32) {
-        await new Promise(resolve => dc.addEventListener('bufferedamountlow', resolve, { once: true }));
-      }
-      const chunk = await blob.slice(offset, offset + CHUNK).arrayBuffer();
-      conn.send(chunk);
-      offset += chunk.byteLength;
-      setProgress('send-progress', blob.size ? (offset / blob.size) * 100 : 100);
+function openOrJoinRoom(id) {
+  peer?.destroy();
+  peer = new Peer(id, { config: { iceServers: ICE } });
+
+  peer.on('open', () => {
+    role = 'host';
+    setStatus('Room open. Waiting for the other device to connect…', 'connecting');
+  });
+  peer.on('connection', c => {
+    if (conn && conn.open) { c.close(); return; } // already paired, ignore extra joiners
+    wireConnection(c);
+  });
+  peer.on('error', err => {
+    if (err.type === 'unavailable-id') {
+      // Someone already opened this room — join it instead, as a guest.
+      peer.destroy();
+      joinRoom(id);
+      return;
     }
-    conn.send({ kind: 'done' });
-    status('sender-status', 'Transfer complete. The data went directly to the other browser.');
-  } catch (e) {
-    status('sender-status', e.message);
-    $('start-share').disabled = false;
-  }
+    setStatus(friendlyPeerError(err), 'err');
+    $('connect-room').disabled = false;
+  });
+  peer.on('disconnected', () => { if (!conn || !conn.open) setStatus('Disconnected from signaling service.', 'err'); });
 }
 
-// ---------- Receiver ----------
-$('start-receive').addEventListener('click', async () => {
+function joinRoom(id) {
+  peer = new Peer({ config: { iceServers: ICE } });
+  let settled = false;
+  const giveUp = setTimeout(() => {
+    if (settled || (conn && conn.open)) return;
+    settled = true;
+    setStatus('No response from the other device. Check the username & password match exactly, then try again.', 'err');
+    $('connect-room').disabled = false;
+  }, 20000);
+
+  peer.on('open', () => {
+    role = 'guest';
+    setStatus('Joining room…', 'connecting');
+    const c = peer.connect(id, { reliable: true });
+    c.on('open', () => { settled = true; clearTimeout(giveUp); });
+    c.on('error', e => { settled = true; clearTimeout(giveUp); setStatus(friendlyPeerError(e), 'err'); $('connect-room').disabled = false; });
+    wireConnection(c);
+  });
+  peer.on('error', err => {
+    settled = true; clearTimeout(giveUp);
+    setStatus(friendlyPeerError(err), 'err');
+    $('connect-room').disabled = false;
+  });
+}
+
+function wireConnection(c) {
+  conn = c;
+  conn.on('open', () => {
+    setStatus('Connected. Live sync is on.', 'live');
+    $('connect-card').classList.add('hidden');
+    $('live-card').classList.remove('hidden');
+    $('live-text').focus();
+  });
+  conn.on('data', handleData);
+  conn.on('close', () => {
+    setStatus('Disconnected.', 'err');
+    $('connect-room').disabled = false;
+    $('live-card').classList.add('hidden');
+    $('connect-card').classList.remove('hidden');
+  });
+  conn.on('error', e => setStatus(friendlyPeerError(e), 'err'));
+}
+
+$('disconnect-room').addEventListener('click', () => {
+  conn?.close(); peer?.destroy();
+  conn = null; peer = null; role = null;
+  $('connect-room').disabled = false;
+  $('live-text').value = '';
+  $('received-files').replaceChildren();
+  setStatus('Not connected.');
+  $('live-card').classList.add('hidden');
+  $('connect-card').classList.remove('hidden');
+});
+
+// ---------- Live, two-way clipboard sync ----------
+$('live-text').addEventListener('input', () => {
+  if (applyingRemoteText) return;
+  clearTimeout(textDebounce);
+  textDebounce = setTimeout(() => {
+    if (conn && conn.open) conn.send({ kind: 'text', value: $('live-text').value });
+  }, 100);
+});
+
+function applyRemoteText(value) {
+  const el = $('live-text');
+  if (el.value === value) return;
+  applyingRemoteText = true;
+  const hadFocus = document.activeElement === el;
+  const atEnd = el.selectionStart === el.value.length;
+  el.value = value;
+  if (hadFocus && atEnd) { el.selectionStart = el.selectionEnd = el.value.length; }
+  applyingRemoteText = false;
+}
+
+// ---------- Sending a file ----------
+$('send-file-button').addEventListener('click', async () => {
   try {
-    const username = $('recv-username').value, password = $('recv-password').value;
-    validateCreds(username, password);
-    $('start-receive').disabled = true;
-    status('receiver-status', 'Looking for the share…');
-    const id = await roomId(username, password);
-    receiverPeer?.destroy();
-    receiverPeer = new Peer({ config: { iceServers: ICE } });
-
-    let settled = false;
-    const giveUp = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      receiverConn?.close();
-      status('receiver-status', 'No response. Make sure the sender clicked "Start sharing" and that both sides typed the exact same username & password, then try again.');
-      $('start-receive').disabled = false;
-    }, 20000);
-
-    receiverPeer.on('open', () => {
-      const conn = receiverPeer.connect(id, { reliable: true });
-      receiverConn = conn;
-      conn.on('open', () => {
-        settled = true; clearTimeout(giveUp);
-        status('receiver-status', 'Connected. Waiting for incoming data…');
-      });
-      conn.on('data', handleIncoming);
-      conn.on('close', () => status('receiver-status', 'Transfer connection closed.'));
-      conn.on('error', e => {
-        settled = true; clearTimeout(giveUp);
-        status('receiver-status', friendlyPeerError(e));
-        $('start-receive').disabled = false;
-      });
-    });
-    receiverPeer.on('error', err => {
-      settled = true; clearTimeout(giveUp);
-      status('receiver-status', friendlyPeerError(err));
-      $('start-receive').disabled = false;
-    });
+    if (!conn || !conn.open) throw new Error('Not connected yet.');
+    if (sending) throw new Error('A file is already sending — wait for it to finish.');
+    const file = $('send-file').files[0];
+    if (!file) throw new Error('Choose a file first.');
+    if (file.size > 500 * 1024 * 1024) throw new Error('For reliability, this demo limits files to 500 MB.');
+    sending = true;
+    $('send-file-button').disabled = true;
+    await sendFile(file);
   } catch (e) {
-    status('receiver-status', e.message);
-    $('start-receive').disabled = false;
+    setStatus(e.message, 'err');
+  } finally {
+    sending = false;
+    $('send-file-button').disabled = false;
   }
 });
 
-function handleIncoming(data) {
+async function sendFile(file) {
+  setProgress('send-progress', 0);
+  conn.send({ kind: 'meta', name: file.name, type: file.type || 'application/octet-stream', size: file.size });
+  let offset = 0;
+  const dc = conn.dataChannel;
+  while (offset < file.size) {
+    if (!conn.open) throw new Error('Peer disconnected during transfer.');
+    if (dc && dc.bufferedAmount > CHUNK * 32) {
+      await new Promise(resolve => dc.addEventListener('bufferedamountlow', resolve, { once: true }));
+    }
+    const chunk = await file.slice(offset, offset + CHUNK).arrayBuffer();
+    conn.send(chunk);
+    offset += chunk.byteLength;
+    setProgress('send-progress', file.size ? (offset / file.size) * 100 : 100);
+  }
+  conn.send({ kind: 'done' });
+  setProgress('send-progress', 100);
+  setTimeout(() => setProgress('send-progress', 0), 900);
+}
+
+// ---------- Receiving: text + files on the same channel ----------
+function handleData(data) {
   const isBinary = data instanceof ArrayBuffer || ArrayBuffer.isView(data);
   if (!isBinary) {
     const message = data;
-    if (message && message.kind === 'meta') {
+    if (!message) return;
+    if (message.kind === 'text') { applyRemoteText(message.value); return; }
+    if (message.kind === 'meta') {
       incomingMeta = message; incomingParts = []; incomingSize = 0;
-      $('received').classList.add('hidden');
-      status('receiver-status', `Receiving ${message.name}…`);
+      setStatus(`Receiving ${message.name}…`, 'live');
+      return;
     }
-    if (message && message.kind === 'done' && incomingMeta) finishIncoming();
+    if (message.kind === 'done' && incomingMeta) { finishIncomingFile(); return; }
     return;
   }
   if (!incomingMeta) return;
   const buf = data instanceof ArrayBuffer ? data : data.buffer;
   incomingParts.push(buf); incomingSize += buf.byteLength;
   const pct = incomingMeta.size ? Math.min(100, (incomingSize / incomingMeta.size) * 100) : 100;
-  status('receiver-status', `Receiving… ${Math.round(pct)}%`);
+  setStatus(`Receiving ${incomingMeta.name}… ${Math.round(pct)}%`, 'live');
 }
 
-function finishIncoming() {
-  receivedBlob = new Blob(incomingParts, { type: incomingMeta.type || 'application/octet-stream' });
-  $('received-name').textContent = `${incomingMeta.name} · ${(receivedBlob.size / 1024).toFixed(1)} KB`;
-  const url = URL.createObjectURL(receivedBlob);
-  $('download').href = url; $('download').download = incomingMeta.name;
-  const preview = $('received-preview'); preview.replaceChildren();
-  if ((incomingMeta.type || '').startsWith('text/')) {
+function finishIncomingFile() {
+  const meta = incomingMeta;
+  const blob = new Blob(incomingParts, { type: meta.type || 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+
+  const card = document.createElement('div');
+  card.className = 'file-card';
+  const name = document.createElement('p');
+  name.className = 'retrieved-name';
+  name.textContent = `${meta.name} · ${(blob.size / 1024).toFixed(1)} KB`;
+  card.append(name);
+
+  const preview = document.createElement('div');
+  preview.className = 'preview';
+  if ((meta.type || '').startsWith('text/')) {
     const pre = document.createElement('pre'); pre.textContent = 'Loading preview…'; preview.append(pre);
-    receivedBlob.text().then(t => pre.textContent = t);
-  } else if ((incomingMeta.type || '').startsWith('image/')) {
-    const img = document.createElement('img'); img.alt = incomingMeta.name; img.src = url; preview.append(img);
-  } else if ((incomingMeta.type || '').startsWith('audio/')) {
+    blob.text().then(t => pre.textContent = t);
+  } else if ((meta.type || '').startsWith('image/')) {
+    const img = document.createElement('img'); img.alt = meta.name; img.src = url; preview.append(img);
+  } else if ((meta.type || '').startsWith('audio/')) {
     const audio = document.createElement('audio'); audio.controls = true; audio.src = url; preview.append(audio);
   } else {
     const p = document.createElement('p'); p.textContent = 'File received. Use Download to save it.'; preview.append(p);
   }
-  $('copy-received').classList.toggle('hidden', !(incomingMeta.type || '').startsWith('text/'));
-  $('received').classList.remove('hidden');
-  status('receiver-status', 'Transfer complete.');
-  incomingMeta = null; incomingParts = [];
+  card.append(preview);
+
+  const actions = document.createElement('div');
+  actions.className = 'result-actions';
+  const download = document.createElement('a');
+  download.className = 'secondary-button'; download.href = url; download.download = meta.name; download.textContent = 'Download file';
+  actions.append(download);
+  if ((meta.type || '').startsWith('text/')) {
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'secondary-button'; copyBtn.textContent = 'Copy text';
+    copyBtn.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(await blob.text()); copyBtn.textContent = 'Copied ✓'; }
+      catch { copyBtn.textContent = 'Blocked'; }
+    });
+    actions.append(copyBtn);
+  }
+  card.append(actions);
+
+  $('received-files').prepend(card);
+  setStatus('Connected. Live sync is on.', 'live');
+  incomingMeta = null; incomingParts = []; incomingSize = 0;
 }
 
-$('copy-received').addEventListener('click', async () => {
-  if (!receivedBlob) return;
-  try { await navigator.clipboard.writeText(await receivedBlob.text()); $('copy-received').textContent = 'Copied ✓'; }
-  catch { status('receiver-status', 'Clipboard access was blocked.'); }
-});
-
-window.addEventListener('beforeunload', () => {
-  senderConn?.close(); receiverConn?.close();
-  senderPeer?.destroy(); receiverPeer?.destroy();
-});
+window.addEventListener('beforeunload', () => { conn?.close(); peer?.destroy(); });
