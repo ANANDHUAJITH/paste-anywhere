@@ -5,37 +5,89 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b0d12">
   <meta name="color-scheme" content="dark">
-  <meta name="description" content="Share text and files instantly between your devices with Paste Anywhere. A free, browser-based peer-to-peer clipboard using encrypted WebRTC transfers — no account or file uploads.">
-  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="author" content="GetMeBy">
+  <meta name="keywords" content="paste anywhere, getmeby, share files between devices, p2p file sharing, webrtc clipboard, online clipboard sync, send files without upload, share text between phone and computer, cross device clipboard, no account file transfer, free file sharing online, multi device room">
+  <meta name="description" content="Paste Anywhere by GetMeBy: a free, browser-based peer-to-peer clipboard and file-sharing room. Share text and files instantly across any number of devices with encrypted WebRTC transfers — no account, no upload, no app install.">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">
   <meta name="googlebot" content="index,follow">
+  <link rel="canonical" href="https://anandhuajith.github.io/paste-anywhere/">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Paste Anywhere">
-  <meta property="og:title" content="Paste Anywhere — Live clipboard & direct file sharing">
-  <meta property="og:description" content="Copy on one device, paste on another. Sync text live and send files directly between browsers with encrypted peer-to-peer transfer.">
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Paste Anywhere — Live clipboard & direct file sharing">
-  <meta name="twitter:description" content="A free browser-based clipboard and file transfer tool. No account, no file uploads — just direct peer-to-peer sharing.">
+  <meta property="og:url" content="https://anandhuajith.github.io/paste-anywhere/">
+  <meta property="og:site_name" content="Paste Anywhere by GetMeBy">
+  <meta property="og:title" content="Paste Anywhere by GetMeBy — Live Clipboard & Multi-Device File Sharing">
+  <meta property="og:description" content="Copy on one device, paste on any number of others. Sync text live and send files directly between browsers with encrypted, no-upload peer-to-peer transfer.">
+  <meta property="og:image" content="https://anandhuajith.github.io/paste-anywhere/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Paste Anywhere by GetMeBy — copy here, paste anywhere">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Paste Anywhere by GetMeBy — Live Clipboard & Multi-Device File Sharing">
+  <meta name="twitter:description" content="A free browser-based clipboard and file transfer room. No account, no file uploads — direct peer-to-peer sharing across any number of devices.">
+  <meta name="twitter:image" content="https://anandhuajith.github.io/paste-anywhere/og-image.png">
+  <meta name="twitter:image:alt" content="Paste Anywhere by GetMeBy — copy here, paste anywhere">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="sitemap" type="application/xml" href="sitemap.xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <title>Paste Anywhere — Live Clipboard & Peer-to-Peer File Sharing</title>
+  <title>Paste Anywhere by GetMeBy — Live Clipboard & Multi-Device File Sharing</title>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "Paste Anywhere",
+    "alternateName": "Paste Anywhere by GetMeBy",
+    "url": "https://anandhuajith.github.io/paste-anywhere/",
+    "image": "https://anandhuajith.github.io/paste-anywhere/og-image.png",
     "applicationCategory": "UtilitiesApplication",
     "operatingSystem": "Any device with a modern web browser",
     "browserRequirements": "JavaScript, WebRTC and a secure context (HTTPS or localhost)",
-    "description": "A free browser-based live clipboard and peer-to-peer file sharing tool. Synchronize text and transfer files directly between two browsers using WebRTC.",
+    "description": "A free browser-based live clipboard and peer-to-peer file sharing room. Synchronize text and transfer files directly between any number of browsers using WebRTC, protected by a username & password pair.",
+    "creator": { "@type": "Organization", "name": "GetMeBy" },
+    "publisher": { "@type": "Organization", "name": "GetMeBy" },
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "featureList": [
       "Live two-way clipboard synchronization",
       "Direct peer-to-peer file transfer",
+      "Any number of devices can join the same room",
+      "Username & password protected rooms that can't be duplicated while active",
       "Encrypted WebRTC data channel",
       "No account or file upload storage required"
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Are my files uploaded or stored?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. File data is sent over the peer-to-peer WebRTC connection and held in browser memory during transfer. The website does not provide file storage." }
+      },
+      {
+        "@type": "Question",
+        "name": "How many devices can join the same room?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Any number. The device that enters a username & password first creates the room; every other device that enters the exact same pair automatically joins that same room, however many there are." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can someone else create a new room with my username and password?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. While a room is active, its username & password are reserved for that room — trying to reuse them only joins the existing room instead of creating a separate one. Once everyone leaves and the room closes, the same pair becomes free again." }
+      },
+      {
+        "@type": "Question",
+        "name": "Why might a device fail to connect?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Some VPNs, restrictive firewalls, mobile networks and NAT configurations block direct peer connections. This version uses STUN but has no TURN relay fallback, so it may not work on every network." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I use it on a phone and a computer?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes, use a modern browser on both devices. Keep both browser tabs open while syncing text or transferring files." }
+      }
     ]
   }
   </script>
@@ -44,24 +96,24 @@
   <div class="ambient ambient-one" aria-hidden="true"></div><div class="ambient ambient-two" aria-hidden="true"></div>
   <header class="topbar">
     <a class="brand" href="./" aria-label="Paste Anywhere home"><span class="brand-mark" aria-hidden="true">p</span><span>paste<span class="brand-light">anywhere</span></span></a>
-    <div class="top-note"><span class="live-dot" aria-hidden="true"></span> DIRECT PEER-TO-PEER</div>
+    <div class="top-note"><span class="live-dot" aria-hidden="true"></span> DIRECT PEER-TO-PEER · BY GETMEBY</div>
   </header>
 
   <main class="shell">
     <section class="intro" aria-labelledby="page-title">
-      <div class="eyebrow"><span class="eyebrow-line"></span> YOUR DEVICES, IN SYNC</div>
+      <div class="eyebrow"><span class="eyebrow-line"></span> ANY NUMBER OF DEVICES, IN SYNC</div>
       <h1 id="page-title">Copy here.<br><span>Paste anywhere.</span></h1>
-      <p class="subtitle">A live clipboard and direct file transfer between two browsers. Type on one device and watch it appear on the other — or send a file without uploading it to a storage server.</p>
-      <div class="trust-row"><span><i></i> Free to use</span><span><i></i> No account</span><span><i></i> WebRTC encrypted</span></div>
+      <p class="subtitle">A live clipboard and direct file transfer room for as many browsers as you like. Type on one device and watch it appear on all the others — or send a file without uploading it to a storage server.</p>
+      <div class="trust-row"><span><i></i> Free to use</span><span><i></i> No account</span><span><i></i> WebRTC encrypted</span><span><i></i> Multi-device rooms</span></div>
     </section>
 
     <div class="room">
-      <div class="p2p-note"><strong>Private by design.</strong> Your text and files travel directly between connected browsers over an encrypted WebRTC data channel. A public signaling service helps the devices find each other; it does not receive the file contents. Use a unique room password and keep it private.</div>
+      <div class="p2p-note"><strong>Private by design.</strong> Your text and files travel directly between connected browsers over an encrypted WebRTC data channel. A public signaling service helps devices find each other; it does not receive the file contents. A room's username & password are reserved to that room while it's active — reusing them joins the same room rather than creating a second one — so keep your pair private and unique.</div>
 
       <section class="panel connect-panel" id="connect-card" aria-labelledby="connect-title">
-        <div class="panel-kicker"><span class="live-dot"></span> START A PRIVATE SESSION</div>
+        <div class="panel-kicker"><span class="live-dot"></span> START A PRIVATE ROOM</div>
         <h2 class="subheading" id="connect-title">Connect your devices</h2>
-        <p class="helper">Choose a username and password, then enter the exact same pair on your second device. Both must be at least 6 characters.</p>
+        <p class="helper">Choose a username and password, then enter the exact same pair on every device that should join — two, three, or more. Both fields need at least 6 characters.</p>
         <label class="field-label" for="room-username">ROOM USERNAME</label>
         <div class="cred-row">
           <input class="cred-input" id="room-username" placeholder="e.g. blue-orbit" autocomplete="username" spellcheck="false" aria-label="Room username">
@@ -76,13 +128,13 @@
       </section>
 
       <section class="panel hidden" id="live-card" aria-labelledby="live-title">
-        <div class="room-head"><div class="panel-kicker"><span class="live-dot"></span> SECURE SESSION ACTIVE</div><button class="link-button" id="disconnect-room" type="button">Disconnect</button></div>
+        <div class="room-head"><div class="panel-kicker"><span class="live-dot"></span> ROOM ACTIVE</div><button class="link-button" id="disconnect-room" type="button">Disconnect</button></div>
         <h2 class="subheading" id="live-title">Your shared clipboard</h2>
-        <p class="helper">Anything typed or pasted here syncs to the other connected device.</p>
+        <p class="helper">Anything typed or pasted here syncs live to every other device in this room.</p>
         <label class="field-label" for="live-text">LIVE TEXT</label>
-        <textarea class="live-area" id="live-text" placeholder="Type or paste here — it appears on the other device as you type…" aria-label="Shared live clipboard text"></textarea>
+        <textarea class="live-area" id="live-text" placeholder="Type or paste here — it appears on every connected device as you type…" aria-label="Shared live clipboard text"></textarea>
         <div class="sync-badge"><span class="dot live"></span> <span id="sync-status">In sync</span></div>
-        <div class="file-transfer-head"><div><h3 class="subheading">Send a file</h3><p class="helper">Transfer up to 500 MB directly to the other browser.</p></div><span class="file-icon" aria-hidden="true">↥</span></div>
+        <div class="file-transfer-head"><div><h3 class="subheading">Send a file</h3><p class="helper">Transfer up to 500 MB directly to everyone else in the room.</p></div><span class="file-icon" aria-hidden="true">↥</span></div>
         <label class="field-label" for="send-file">CHOOSE A FILE</label>
         <input class="file-input" id="send-file" type="file">
         <button class="primary-button" id="send-file-button" type="button"><span>Send file</span><span class="button-arrow" aria-hidden="true">↗</span></button>
@@ -95,18 +147,20 @@
       <div class="section-heading"><span class="eyebrow">THREE QUICK STEPS</span><h2 id="how-title">Sharing, without the detour.</h2></div>
       <div class="steps-grid">
         <article class="step-card"><span class="step-number">01</span><h3>Choose your room</h3><p>Generate a username and password, or create your own pair. Keep the details handy.</p></article>
-        <article class="step-card"><span class="step-number">02</span><h3>Connect both devices</h3><p>Open Paste Anywhere on each device and connect with the same room details.</p></article>
-        <article class="step-card"><span class="step-number">03</span><h3>Paste or send</h3><p>Text syncs in both directions. Files move directly between browsers while the session is open.</p></article>
+        <article class="step-card"><span class="step-number">02</span><h3>Connect every device</h3><p>Open Paste Anywhere on each device — two, three, or as many as you need — and connect with the same room details.</p></article>
+        <article class="step-card"><span class="step-number">03</span><h3>Paste or send</h3><p>Text syncs to everyone in the room. Files move directly between browsers while the room is open.</p></article>
       </div>
     </section>
 
     <section class="details-section" aria-labelledby="features-title">
       <div class="section-heading"><span class="eyebrow">MADE FOR QUICK TRANSFERS</span><h2 id="features-title">A simple way to move things between devices.</h2></div>
       <div class="feature-grid">
-        <article class="feature-card"><span class="feature-symbol">↔</span><h3>Live clipboard sync</h3><p>Share snippets, links, notes and copied text between two browsers in near real time.</p></article>
+        <article class="feature-card"><span class="feature-symbol">↔</span><h3>Live clipboard sync</h3><p>Share snippets, links, notes and copied text across any number of browsers in near real time.</p></article>
         <article class="feature-card"><span class="feature-symbol">⇧</span><h3>Direct file sharing</h3><p>Send documents, images, audio and other files without first uploading them to this website.</p></article>
         <article class="feature-card"><span class="feature-symbol">⌁</span><h3>Encrypted connection</h3><p>WebRTC data channels encrypt data in transit between peers. The signaling service is used only to help establish the connection.</p></article>
         <article class="feature-card"><span class="feature-symbol">◎</span><h3>No account needed</h3><p>Use a temporary room pair instead of creating an account or managing a cloud inbox.</p></article>
+        <article class="feature-card"><span class="feature-symbol">⬡</span><h3>Any number of people</h3><p>One room, many devices. Everyone who connects with the right username & password joins the same shared clipboard and file room.</p></article>
+        <article class="feature-card"><span class="feature-symbol">⚿</span><h3>Reserved while active</h3><p>A room's username & password can't be reused to start a second, separate room while that room is still open — they just join the one that's already running.</p></article>
       </div>
     </section>
 
@@ -114,14 +168,15 @@
       <div class="section-heading"><span class="eyebrow">GOOD TO KNOW</span><h2 id="faq-title">Frequently asked questions</h2></div>
       <div class="faq-list">
         <article><h3>Are my files uploaded or stored?</h3><p>No. File data is sent over the peer-to-peer WebRTC connection and held in browser memory during transfer. The website does not provide file storage.</p></article>
-        <article><h3>Do both devices need the same room details?</h3><p>Yes. Enter the exact same username and password on both devices. Use a unique, hard-to-guess pair and do not reuse an important password.</p></article>
+        <article><h3>How many devices can join the same room?</h3><p>Any number. Enter the exact same username and password on every device — the first one creates the room, and every device after that automatically joins it. Everyone sees the same live text and receives every file that's sent.</p></article>
+        <article><h3>Can someone else create a new room with my username and password?</h3><p>No. While a room is active, its username & password are reserved for that room — trying to "create" a new room with the same pair just joins the existing one instead of starting a separate one. Once everyone disconnects and the room closes, the same pair is free to be used again (by you or anyone else), so pick a pair that isn't easy to guess.</p></article>
         <article><h3>Why might a device fail to connect?</h3><p>Some VPNs, restrictive firewalls, mobile networks and NAT configurations block direct peer connections. This version uses STUN but has no TURN relay fallback, so it may not work on every network.</p></article>
-        <article><h3>Can I use it on a phone and a computer?</h3><p>Yes, use a modern browser on both devices. Keep both browser tabs open while syncing text or transferring files.</p></article>
+        <article><h3>Can I use it on a phone and a computer?</h3><p>Yes, use a modern browser on each device. Keep every browser tab open while syncing text or transferring files.</p></article>
       </div>
     </section>
   </main>
 
-  <footer><a class="footer-brand" href="./">PASTE ANYWHERE</a><span>WEBRTC · DIRECT P2P · NO FILE STORAGE</span><span>Keep your room details private.</span></footer>
+  <footer><a class="footer-brand" href="./">PASTE ANYWHERE</a><span>WEBRTC · DIRECT P2P · NO FILE STORAGE</span><span>By GetMeBy · Keep your room details private.</span></footer>
   <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
   <script src="app.js" defer></script>
 </body>

@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+
+Sitemap: https://anandhuajith.github.io/paste-anywhere/sitemap.xml
