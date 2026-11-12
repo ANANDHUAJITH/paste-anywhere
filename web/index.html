@@ -3,20 +3,24 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0b0d12">
-  <meta name="description" content="Private peer-to-peer text and file sharing. No upload server or cloud storage.">
+  <meta name="description" content="Fast peer-to-peer text and file sharing. Pick a username and password on both devices to connect.">
   <title>Paste Anywhere — Peer to peer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <style>
-    .modal{position:fixed;inset:0;z-index:50;background:#05070bdc;display:grid;place-items:center;padding:20px}.modal-card{position:relative;width:min(420px,100%);background:#151a24;border:1px solid #303747;border-radius:18px;padding:24px;text-align:center;box-shadow:0 20px 80px #0009}.modal-card h2{margin:4px 0 8px}.modal-close{position:absolute;right:12px;top:8px;border:0;background:transparent;color:#dce5f4;font-size:28px;cursor:pointer}.qr-code{display:grid;place-items:center;background:white;padding:14px;border-radius:12px;width:max-content;max-width:100%;margin:18px auto}.qr-code img,.qr-code canvas{max-width:100%;height:auto}#qr-video{width:100%;max-height:60vh;background:#05070b;border-radius:12px;margin-top:12px}.p2p-note{border:1px solid #303747;background:#151a24;border-radius:12px;padding:13px 15px;color:#b9c3d5;font-size:13px;line-height:1.6;margin:22px 0}
+    .p2p-note{border:1px solid #303747;background:#151a24;border-radius:12px;padding:13px 15px;color:#b9c3d5;font-size:13px;line-height:1.6;margin:22px 0}
     .p2p-note strong{color:#e9eef8}.flow{display:grid;grid-template-columns:1fr 1fr;gap:16px}.flow .panel{min-width:0}
-    .field-label{display:block;margin:18px 0 8px}.signal{width:100%;min-height:110px;resize:vertical;background:#0d1119;color:#dce5f4;border:1px solid #303747;border-radius:10px;padding:12px;font:12px 'DM Mono',monospace;overflow-wrap:anywhere}
-    .signal:focus,.pin-input:focus,textarea:focus{outline:2px solid #829cf8;outline-offset:2px}.action-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}.secondary-button,.primary-button{cursor:pointer}.secondary-button:disabled,.primary-button:disabled{opacity:.5;cursor:not-allowed}
+    .field-label{display:block;margin:18px 0 8px}
+    .cred-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .cred-input{width:100%;background:#0d1119;color:#dce5f4;border:1px solid #303747;border-radius:10px;padding:12px;font:13px 'DM Mono',monospace}
+    .cred-input:focus,textarea:focus{outline:2px solid #829cf8;outline-offset:2px}
+    .action-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}.secondary-button,.primary-button{cursor:pointer}.secondary-button:disabled,.primary-button:disabled{opacity:.5;cursor:not-allowed}
     .status{margin-top:12px;color:#aebbd0;font-size:13px;min-height:20px}.progress{height:6px;background:#252d3b;border-radius:9px;overflow:hidden;margin-top:10px}.progress>div{height:100%;width:0;background:#8ba2ff;transition:width .15s}
-    .hidden{display:none!important}.connection{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#aebbd0}.connection:before{content:'';width:8px;height:8px;border-radius:50%;background:#778195}.connection.on:before{background:#58d6a0}
+    .hidden{display:none!important}
     .file-input{display:block;width:100%;margin:12px 0;color:#cbd5e1}.subheading{font-size:17px;margin:0 0 8px}.helper{font-size:12px;color:#909db2;line-height:1.5}.how{margin-top:28px}
-    @media(max-width:760px){.flow{grid-template-columns:1fr}.shell{padding-left:18px;padding-right:18px}}
+    .hint{font-size:11px;color:#7f8999;margin-top:6px}
+    @media(max-width:760px){.flow{grid-template-columns:1fr}.shell{padding-left:18px;padding-right:18px}.cred-row{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -24,41 +28,38 @@
   <header class="topbar"><a class="brand" href="./"><span class="brand-mark">p</span><span>paste<span class="brand-light">anywhere</span></span></a><div class="top-note"><span class="live-dot"></span> Direct peer-to-peer</div></header>
   <main class="shell">
     <section class="intro"><div class="eyebrow"><span class="eyebrow-line"></span> THE UNIVERSAL CLIPBOARD</div><h1>Move it.<br><span>Directly.</span></h1><p class="subtitle">Send text and files straight between browsers. No upload server, no cloud storage, no account.</p></section>
-    <div class="p2p-note"><strong>How serverless connection works:</strong> The two devices exchange a connection offer and answer by copy/paste (or any chat app). Once connected, data travels directly between them using encrypted WebRTC. This page does not relay or store your files.</div>
+    <div class="p2p-note"><strong>How it works:</strong> Pick any username and password (6+ characters each) on the sending device, and tell the receiving device the same two values (text them, say them out loud, whatever's easiest). Both sides use that to find each other, then data travels directly between the browsers over WebRTC. This page never sees or stores your file.</div>
     <div class="flow">
       <section class="panel">
-        <div class="success-label"><span class="live-dot"></span> SENDER DEVICE</div><h2 class="subheading" style="margin-top:14px">1. Create a connection</h2>
-        <p class="helper">Choose content, then create an offer. Send the offer text to the receiving device.</p>
-        <label class="field-label" for="send-text">TEXT TO SEND</label><textarea id="send-text" placeholder="Paste text here…" style="width:100%;min-height:100px"></textarea>
+        <div class="success-label"><span class="live-dot"></span> SEND</div><h2 class="subheading" style="margin-top:14px">1. Start a share</h2>
+        <p class="helper">Choose content, pick a username & password, and start sharing.</p>
+        <label class="field-label" for="send-text">TEXT TO SEND</label><textarea id="send-text" placeholder="Paste text here…" style="width:100%;min-height:90px"></textarea>
         <label class="field-label" for="send-file">OR CHOOSE A FILE</label><input class="file-input" id="send-file" type="file">
-        <button class="primary-button" id="create-offer"><span>Create offer</span><span class="button-arrow">↗</span></button>
-        <label class="field-label" for="offer-out">YOUR OFFER — copy to receiver</label><textarea class="signal" id="offer-out" readonly placeholder="Your offer appears here…"></textarea>
-        <div class="action-row"><button class="secondary-button" id="copy-offer" disabled>Copy offer</button><button class="secondary-button" id="show-offer-qr" disabled>Show QR</button><button class="secondary-button" id="scan-answer-qr">Scan answer QR</button></div>
-        <label class="field-label" for="answer-in">RECEIVER'S ANSWER — paste here</label><textarea class="signal" id="answer-in" placeholder="Paste the answer from the receiver…"></textarea>
-        <div class="action-row"><button class="primary-button" id="connect-sender" disabled><span>Connect & send</span><span class="button-arrow">↗</span></button></div>
-        <div class="status" id="sender-status" role="status">Not connected.</div><div class="progress"><div id="send-progress"></div></div>
+        <label class="field-label">USERNAME &amp; PASSWORD (min 6 characters each)</label>
+        <div class="cred-row">
+          <input class="cred-input" id="send-username" placeholder="username" autocomplete="off" spellcheck="false">
+          <input class="cred-input" id="send-password" placeholder="password" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="action-row"><button class="secondary-button" id="generate-creds" type="button">🎲 Generate</button></div>
+        <div class="action-row"><button class="primary-button" id="start-share" style="margin-top:12px"><span>Start sharing</span><span class="button-arrow">↗</span></button></div>
+        <div class="status" id="sender-status" role="status">Not started.</div><div class="progress"><div id="send-progress"></div></div>
       </section>
       <section class="panel">
-        <div class="success-label"><span class="live-dot"></span> RECEIVER DEVICE</div><h2 class="subheading" style="margin-top:14px">2. Accept a connection</h2>
-        <p class="helper">Paste the sender's offer below. Create an answer and send it back to the sender.</p>
-        <label class="field-label" for="offer-in">SENDER'S OFFER</label><textarea class="signal" id="offer-in" placeholder="Paste the offer from the sender…"></textarea>
-        <button class="primary-button" id="create-answer" style="margin-top:10px"><span>Create answer</span><span class="button-arrow">↗</span></button>
-        <label class="field-label" for="answer-out">YOUR ANSWER — send to sender</label><textarea class="signal" id="answer-out" readonly placeholder="Your answer appears here…"></textarea>
-        <div class="action-row"><button class="secondary-button" id="copy-answer" disabled>Copy answer</button><button class="secondary-button" id="show-answer-qr" disabled>Show QR</button><button class="secondary-button" id="scan-offer-qr">Scan offer QR</button></div>
-        <div class="status" id="receiver-status" role="status">Waiting for sender…</div>
+        <div class="success-label"><span class="live-dot"></span> RECEIVE</div><h2 class="subheading" style="margin-top:14px">2. Connect &amp; receive</h2>
+        <p class="helper">Enter the exact same username &amp; password the sender used.</p>
+        <label class="field-label">USERNAME &amp; PASSWORD</label>
+        <div class="cred-row">
+          <input class="cred-input" id="recv-username" placeholder="username" autocomplete="off" spellcheck="false">
+          <input class="cred-input" id="recv-password" placeholder="password" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="action-row"><button class="primary-button" id="start-receive" style="margin-top:12px"><span>Connect &amp; receive</span><span class="button-arrow">↗</span></button></div>
+        <div class="status" id="receiver-status" role="status">Not connected.</div>
         <div id="received" class="hidden" style="margin-top:18px"><div class="success-label"><span class="live-dot"></span> TRANSFER RECEIVED</div><p id="received-name" class="retrieved-name"></p><div id="received-preview" class="preview"></div><a id="download" class="secondary-button download-link" href="#" download>Download file</a><button class="secondary-button" id="copy-received" style="margin-left:8px">Copy text</button></div>
       </section>
     </div>
-    <section class="how"><div><span class="step-number">01</span><strong>Create offer</strong><span>Sender creates a one-time connection code.</span></div><div><span class="step-number">02</span><strong>Exchange codes</strong><span>Copy offer and answer between devices.</span></div><div><span class="step-number">03</span><strong>Transfer directly</strong><span>WebRTC sends encrypted data device-to-device.</span></div></section>
+    <section class="how"><div><span class="step-number">01</span><strong>Set username &amp; password</strong><span>Any values, 6+ characters each, both sides must match.</span></div><div><span class="step-number">02</span><strong>Start sharing</strong><span>Sender clicks Start sharing and waits.</span></div><div><span class="step-number">03</span><strong>Connect &amp; receive</strong><span>Receiver enters the same details and the file arrives directly.</span></div></section>
   </main>
-  <footer><span>PASTE ANYWHERE</span><span>WEBRTC · END-TO-END ENCRYPTED · NO FILE SERVER</span></footer>
-  <div id="qr-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="qr-title">
-    <div class="modal-card"><button class="modal-close" id="close-qr" aria-label="Close">×</button><h2 id="qr-title">Connection QR</h2><p class="helper">Keep this screen open and scan it from the other device.</p><div id="qr-code" class="qr-code"></div></div>
-  </div>
-  <div id="scanner" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="scanner-title">
-    <div class="modal-card"><button class="modal-close" id="close-scanner" aria-label="Close">×</button><h2 id="scanner-title">Scan connection QR</h2><p class="helper">Allow camera access and point it at the other device's QR code.</p><video id="qr-video" playsinline muted></video><canvas id="qr-canvas" class="hidden"></canvas></div>
-  </div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <footer><span>PASTE ANYWHERE</span><span>WEBRTC · DIRECT P2P · NO FILE SERVER</span></footer>
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script src="app.js"></script>
 </body></html>
