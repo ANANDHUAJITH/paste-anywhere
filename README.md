@@ -1,78 +1,203 @@
-# Paste Anywhere by GetMeBy — fast P2P file & text sharing
+# Paste Anywhere
 
-A static, browser-based text and file transfer app. It uses **WebRTC DataChannels** to send data directly between browsers — any number of them in the same room. There is no upload API, backend, hosted transfer store, or account system — just a username and password typed on every device that should join.
+Share text and files directly between your devices. No accounts, uploads, or cloud storage required.
 
-## How it works
+Paste Anywhere is a free, browser-based peer-to-peer sharing tool. Connect your devices using the same username and password, then share text and files over direct browser-to-browser connections.
 
-1. Open the site on every device that should take part — two, three, or more.
-2. On each device, type the exact same **username and password (6+ characters each)** and click **Connect**. It doesn't matter which device clicks first — whichever one gets there first creates the room, every device after that joins it automatically.
-3. Once connected, a shared "live clipboard" text box appears on every device. Anything typed or pasted into it on any one of them shows up on all the others as you type, live, for as long as the room is open.
-4. Anyone in the room can also pick a file and click **Send file** at any point — it goes straight to everyone else over the same direct connections, with a progress bar and a preview/download card on the receiving side. Any participant can send a file, any number of times, independent of the live text sync.
-5. The app hashes the username+password into a short room id and uses that to find the matching peer through the public [PeerJS](https://peerjs.com) signaling broker. Once browsers find each other, everything — text sync and files — travels directly between them over encrypted WebRTC data channels; the broker only helps them find each other, it never sees the content.
+## Features
 
-### Room safety: a username & password can't be "double-booked"
+- **Live clipboard sync:** Text entered on one connected device appears on the others in real time.
+- **Direct file sharing:** Send files to other connected devices without uploading them to a file-hosting service.
+- **Multiple devices:** Connect two or more devices to the same room.
+- **No account required:** No registration, email address, or installation is needed.
+- **Encrypted connections:** WebRTC DataChannels encrypt data in transit.
+- **Free to use:** No subscription or payment is required.
 
-The room id is derived deterministically from the username+password pair, and only one device can hold that id on the signaling broker at a time:
+## How to Use Paste Anywhere
 
-- The **first** device to connect with a given pair creates (opens) the room and becomes its host.
-- While that room is open, **nobody can create a second, separate room with the same pair** — trying to "connect" with those same details just joins the existing active room instead, exactly like every other participant.
-- **Any number of people** can join an already-open room with the right username & password — there's no limit on guests, and everyone in the room syncs text and files with everyone else.
-- Once every device disconnects and the room closes, the same username & password become free again and the next device to use them creates a fresh room.
+1. Open the Paste Anywhere website on each device you want to connect.
+2. Enter the same username and password on every device. Both must be at least 6 characters long.
+3. Click **Connect**.
+4. Once connected, use the shared text area to exchange text.
+5. To send a file, select it and click **Send file**. Other connected devices can receive and download it.
 
-This is a convenience pairing mechanism, not a hardened authentication system — anyone who learns (or guesses) the username & password can join that room while it's open. Use a pair that isn't trivially guessable and isn't reused from anywhere important.
+The first device creates the room. Devices that connect later with the same credentials join that active room.
 
-### Network caveat
+## Sharing Text
 
-This build uses a public STUN server for peer discovery and deliberately has **no TURN relay**. Direct connections work on many networks, but restrictive NATs, corporate firewalls, VPNs, and some mobile networks may prevent a connection. A TURN service would improve reachability but would relay traffic and require infrastructure. The static app itself does not host or relay user files.
+Paste Anywhere provides a shared text area for everyone in the room.
 
-## SEO & discoverability
+When a participant types or pastes text, the application synchronizes the changes with the other connected devices. This is useful for sharing links, notes, code snippets, and other text.
 
-The `web/` app ships with what it needs to show up for searches like "paste anywhere", "share files between devices online free", or "p2p clipboard sync":
+Text synchronization is available while the room and its connections remain active. It is not a cloud-backed document or permanent storage service.
 
-- Descriptive `<title>`, meta description, and a keywords tag covering the terms people actually search.
-- Open Graph + Twitter Card tags (including a generated `og-image.png`) so links preview well when shared on social apps and chat.
-- A canonical URL and `sitemap.xml`, referenced from `robots.txt`, pointing at the GitHub Pages URL.
-- `WebApplication` and `FAQPage` JSON-LD structured data, so search engines can surface rich results (price: free, feature list, FAQ snippets).
-- Semantic headings (`h1`/`h2`/`h3`) and a real FAQ section with the questions people actually ask before using a tool like this.
+## Sharing Files
 
-**If you deploy to a different URL** (a custom domain, a different GitHub username/repo, etc.), update the `canonical`, `og:url`, `og:image`, `twitter:image` tags and the JSON-LD `url`/`image` fields in `web/index.html`, plus the URLs in `web/sitemap.xml` and `web/robots.txt`, to match. They're currently set to `https://anandhuajith.github.io/paste-anywhere/`.
+Files are transferred directly between connected browsers using WebRTC DataChannels.
 
-## Deploy to GitHub Pages
+1. Select a file on your device.
+2. Click **Send file**.
+3. The application transfers the file to the other connected devices.
+4. Recipients can view the transfer progress and use the available preview or download option.
 
-1. Push this repository to GitHub.
-2. In **Settings → Pages → Build and deployment**, choose **GitHub Actions**.
-3. Push to `main` (or run the workflow manually from the Actions tab).
-4. The workflow publishes the `web/` directory. The app is static and needs no Go server.
+The sending-side file size limit is **500 MB per file**. Browser memory and device capabilities may impose lower practical limits.
 
-The included `.github/workflows/pages.yml` builds and deploys the site. If your default branch is not `main`, update the workflow trigger.
+Send one file at a time per device and wait for the current transfer to finish before starting another.
 
-## Run locally
+## How It Works
 
-Because WebRTC and clipboard features require a secure context, use `localhost`:
+Paste Anywhere uses a peer-to-peer architecture. It does not use a conventional application backend to receive, store, or distribute files.
 
-```bash
-cd web
-python3 -m http.server 8080
-```
+### 1. Room identification
 
-Open http://localhost:8080.
+The application derives a deterministic room ID from the username and password entered by the user. Devices entering the same credentials derive the same room ID.
 
-## Security and limitations
+### 2. Peer discovery and signaling
 
-- WebRTC data channels are encrypted in transit (DTLS/SCTP).
-- No files are uploaded to this website or stored by it. Participating browsers hold the data in memory while transferring.
-- The username & password are a pairing convenience, not real authentication — anyone with the same two values can join that room while it's open. Don't reuse a password you care about, and don't treat this as access control.
-- A public STUN service and the public PeerJS signaling broker are contacted for peer discovery/pairing; neither receives the file payload, only connection metadata.
-- No TURN fallback means some network combinations cannot connect.
-- Files are limited to 500 MB each on the sending side; send one at a time per device and wait for it to finish before starting the next. Browser memory and device capabilities may impose lower practical limits.
-- Keep every tab open for as long as you want text to keep syncing or files to transfer. If the host's tab closes, the room ends for everyone in it; a guest closing their tab only removes that one device. Click Connect again to start or rejoin a room.
-- Use HTTPS in production. GitHub Pages provides HTTPS.
+The application uses PeerJS and its public signaling broker to help browsers discover each other and establish WebRTC connections.
 
-## Repository layout
+The first device creates the room. Other devices using the same credentials attempt to join the active room.
+
+The signaling service helps coordinate connection setup. It does not carry the file or text payloads after direct peer connections are established.
+
+### 3. Direct communication
+
+After a connection is established, devices exchange data through WebRTC DataChannels.
+
+Text updates and file data travel directly between connected browsers rather than through a central file-transfer server.
+
+### 4. Encrypted transfers
+
+WebRTC DataChannels use DTLS/SCTP to provide encryption in transit between connected peers.
+
+## Connection Architecture
 
 ```text
-web/                         Static application (index.html, app.js, styles.css, SEO files, og-image.png)
-.github/workflows/pages.yml  GitHub Pages deployment
+                 Paste Anywhere
+                        |
+                 Enter Credentials
+                        |
+                 Generate Room ID
+                        |
+                 PeerJS Signaling
+                        |
+                 Discover Devices
+                        |
+                 WebRTC Connections
+                        |
+                Encrypted DataChannels
+                        |
+             +----------+----------+
+             |          |          |
+           Phone      Laptop     Desktop
+             |          |          |
+             +----- Text Sync -----+
+             |          |          |
+             +----- File Sharing --+
 ```
 
-The previous Go HTTP upload server and Docker deployment are no longer part of the runtime architecture.
+## Room Behaviour
+
+A room is identified by the username and password combination.
+
+- The first device to connect creates the room.
+- Devices using the same credentials join the active room.
+- Multiple devices can participate in the same room.
+- A second independent room cannot be created with the same room ID while the first is active.
+- When the host disconnects, the room ends for everyone.
+- When all devices have disconnected and the room is closed, the credentials can be used to create a new room.
+
+The username and password are a pairing mechanism, not a hardened authentication system. Anyone who knows the credentials may be able to join while the room is active.
+
+Use a unique, difficult-to-guess combination. Do not reuse a password that protects another account or service.
+
+## Privacy and Security
+
+- Files are not uploaded to a Paste Anywhere file-storage server.
+- Text and files are exchanged through direct peer connections.
+- WebRTC encrypts data in transit.
+- The public PeerJS signaling broker and STUN service are used for connection setup and network discovery.
+- The application does not provide permanent cloud storage for shared text or files.
+- No user account or registration is required.
+
+The signaling broker and STUN service may process connection metadata, such as information needed to establish peer connections. They are not intended to receive the contents of file transfers or shared text sent over established DataChannels.
+
+Do not treat room credentials as strong access control. Anyone who obtains them may be able to join the room.
+
+## Network Requirements and Limitations
+
+Paste Anywhere uses a public STUN server and does not include a TURN relay.
+
+Direct WebRTC connections work on many networks, but some network configurations prevent them. Connection problems may occur with:
+
+- Restrictive NAT configurations
+- Corporate or institutional firewalls
+- Some VPN connections
+- Certain mobile networks
+
+A TURN service could improve connectivity by relaying traffic, but it would require additional infrastructure. This version deliberately does not use one.
+
+Other limitations:
+
+- The sending-side file size limit is 500 MB per file.
+- Browser memory and device capabilities may reduce the practical file size limit.
+- Keep the browser tab open while using the room.
+- The host's tab must remain open to keep the room active.
+- If a guest closes their tab, only that guest disconnects.
+- If the host closes their tab, the room ends for everyone.
+- Reconnect by clicking **Connect** again.
+- The application requires HTTPS in production. Local development can use `localhost`.
+
+## Frequently Asked Questions
+
+### Is Paste Anywhere free?
+
+Yes. Paste Anywhere is free to use.
+
+### Do I need to create an account?
+
+No. Enter the same username and password on the devices you want to connect.
+
+### Can I connect my phone and computer?
+
+Yes. Open the website on both devices and use the same room credentials.
+
+### Can more than two devices connect?
+
+Yes. Multiple devices can join the same active room.
+
+### Are files uploaded to a server?
+
+No. Files are transferred directly between connected browsers using WebRTC DataChannels.
+
+### Does Paste Anywhere store my files?
+
+Paste Anywhere does not provide a central file-storage service. Files are transferred between participating browsers.
+
+### Is shared text saved permanently?
+
+No. The shared text is synchronized during the active session. It is not stored as a permanent cloud document.
+
+### Can someone else join my room?
+
+Anyone who knows the exact username and password may be able to join while the room is active. Keep your credentials private.
+
+### Why are my devices unable to connect?
+
+Some networks block or restrict direct peer-to-peer connections. Firewalls, VPNs, and restrictive NAT configurations can prevent WebRTC connections. This version does not have a TURN relay fallback.
+
+### What happens when I close the browser tab?
+
+If the host closes its tab, the room ends for everyone. If a guest closes its tab, only that device disconnects.
+
+### What is the maximum file size?
+
+The sending-side limit is 500 MB per file. Actual limits may be lower depending on the browser and available memory.
+
+## About
+
+Paste Anywhere is a browser-based peer-to-peer text and file sharing application by GetMeBy.
+
+Its goal is simple: make sharing between your own devices quick and straightforward, without requiring accounts, file uploads, or cloud storage.
+
+**Connect. Paste. Share.**
