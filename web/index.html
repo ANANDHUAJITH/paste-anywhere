@@ -1,95 +1,128 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b0d12">
-  <meta name="description" content="Fast peer-to-peer live clipboard and file sharing. Same username & password on both devices, no accounts.">
-  <title>Paste Anywhere — Peer to peer</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Share text and files instantly between your devices with Paste Anywhere. A free, browser-based peer-to-peer clipboard using encrypted WebRTC transfers — no account or file uploads.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="googlebot" content="index,follow">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Paste Anywhere">
+  <meta property="og:title" content="Paste Anywhere — Live clipboard & direct file sharing">
+  <meta property="og:description" content="Copy on one device, paste on another. Sync text live and send files directly between browsers with encrypted peer-to-peer transfer.">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Paste Anywhere — Live clipboard & direct file sharing">
+  <meta name="twitter:description" content="A free browser-based clipboard and file transfer tool. No account, no file uploads — just direct peer-to-peer sharing.">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <style>
-    .room{max-width:560px;margin:0 auto}
-    .p2p-note{border:1px solid #303747;background:#151a24;border-radius:12px;padding:13px 15px;color:#b9c3d5;font-size:13px;line-height:1.6;margin:22px 0}
-    .p2p-note strong{color:#e9eef8}
-    .field-label{display:block;margin:18px 0 8px}
-    .cred-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .cred-input{width:100%;background:#0d1119;color:#dce5f4;border:1px solid #303747;border-radius:10px;padding:12px;font:13px 'DM Mono',monospace}
-    .cred-input:focus,textarea:focus{outline:2px solid #829cf8;outline-offset:2px}
-    .action-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}
-    .secondary-button,.primary-button{cursor:pointer}
-    .secondary-button:disabled,.primary-button:disabled{opacity:.5;cursor:not-allowed}
-    .status-line{display:flex;align-items:center;gap:9px;margin-top:14px;color:#aebbd0;font-size:13px;min-height:20px}
-    .dot{width:9px;height:9px;border-radius:50%;background:#5b6578;flex:none;transition:background .2s}
-    .dot.connecting{background:#e8c25f;box-shadow:0 0 10px #e8c25f88}
-    .dot.live{background:#58d6a0;box-shadow:0 0 10px #58d6a088}
-    .dot.err{background:#ff7d7d;box-shadow:0 0 10px #ff7d7d88}
-    .progress{height:6px;background:#252d3b;border-radius:9px;overflow:hidden;margin-top:10px}
-    .progress>div{height:100%;width:0;background:#8ba2ff;transition:width .15s}
-    .hidden{display:none!important}
-    .file-input{display:block;width:100%;margin:12px 0;color:#cbd5e1}
-    .subheading{font-size:17px;margin:0 0 8px}
-    .helper{font-size:12px;color:#909db2;line-height:1.5}
-    .how{margin-top:28px}
-    .live-area{width:100%;min-height:160px;resize:vertical;font:13px/1.6 'DM Mono',monospace}
-    .sync-badge{display:inline-flex;align-items:center;gap:6px;font:10px 'DM Mono',monospace;color:#7f8999;margin-top:7px}
-    .sync-badge .dot{width:6px;height:6px}
-    .file-list{display:flex;flex-direction:column;gap:12px;margin-top:14px}
-    .file-card{padding:14px;background:#0e1310;border:1px solid #35472b;border-radius:12px}
-    .file-card .retrieved-name{margin:0 0 9px}
-    .file-card .result-actions{display:flex;gap:8px;margin-top:10px}
-    .room-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .link-button{border:0;background:transparent;color:#a9b3c4;font:10px 'DM Mono',monospace;cursor:pointer;text-decoration:underline}
-    @media(max-width:560px){.room{max-width:100%}.cred-row{grid-template-columns:1fr}}
-  </style>
+  <title>Paste Anywhere — Live Clipboard & Peer-to-Peer File Sharing</title>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Paste Anywhere",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Any device with a modern web browser",
+    "browserRequirements": "JavaScript, WebRTC and a secure context (HTTPS or localhost)",
+    "description": "A free browser-based live clipboard and peer-to-peer file sharing tool. Synchronize text and transfer files directly between two browsers using WebRTC.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "featureList": [
+      "Live two-way clipboard synchronization",
+      "Direct peer-to-peer file transfer",
+      "Encrypted WebRTC data channel",
+      "No account or file upload storage required"
+    ]
+  }
+  </script>
 </head>
 <body>
-  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
-  <header class="topbar"><a class="brand" href="./"><span class="brand-mark">p</span><span>paste<span class="brand-light">anywhere</span></span></a><div class="top-note"><span class="live-dot"></span> Direct peer-to-peer</div></header>
+  <div class="ambient ambient-one" aria-hidden="true"></div><div class="ambient ambient-two" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Paste Anywhere home"><span class="brand-mark" aria-hidden="true">p</span><span>paste<span class="brand-light">anywhere</span></span></a>
+    <div class="top-note"><span class="live-dot" aria-hidden="true"></span> DIRECT PEER-TO-PEER</div>
+  </header>
+
   <main class="shell">
-    <section class="intro"><div class="eyebrow"><span class="eyebrow-line"></span> THE UNIVERSAL CLIPBOARD</div><h1>Move it.<br><span>Live.</span></h1><p class="subtitle">One shared clipboard between two browsers. Type or paste on either side, it shows up on the other instantly. Send files the same way.</p></section>
+    <section class="intro" aria-labelledby="page-title">
+      <div class="eyebrow"><span class="eyebrow-line"></span> YOUR DEVICES, IN SYNC</div>
+      <h1 id="page-title">Copy here.<br><span>Paste anywhere.</span></h1>
+      <p class="subtitle">A live clipboard and direct file transfer between two browsers. Type on one device and watch it appear on the other — or send a file without uploading it to a storage server.</p>
+      <div class="trust-row"><span><i></i> Free to use</span><span><i></i> No account</span><span><i></i> WebRTC encrypted</span></div>
+    </section>
 
     <div class="room">
-      <div class="p2p-note"><strong>How it works:</strong> Pick any username &amp; password (6+ characters each) and enter the exact same values on the other device, then hit Connect on both. First one in opens the room, the second one joins it — whichever order you do it in. Once connected, text stays in sync live and files transfer directly, browser to browser.</div>
+      <div class="p2p-note"><strong>Private by design.</strong> Your text and files travel directly between connected browsers over an encrypted WebRTC data channel. A public signaling service helps the devices find each other; it does not receive the file contents. Use a unique room password and keep it private.</div>
 
-      <section class="panel" id="connect-card">
-        <div class="success-label"><span class="live-dot"></span> CONNECT</div>
-        <h2 class="subheading" style="margin-top:14px">Username &amp; password</h2>
-        <p class="helper">Use the same two values on both devices — any text, 6+ characters each.</p>
+      <section class="panel connect-panel" id="connect-card" aria-labelledby="connect-title">
+        <div class="panel-kicker"><span class="live-dot"></span> START A PRIVATE SESSION</div>
+        <h2 class="subheading" id="connect-title">Connect your devices</h2>
+        <p class="helper">Choose a username and password, then enter the exact same pair on your second device. Both must be at least 6 characters.</p>
+        <label class="field-label" for="room-username">ROOM USERNAME</label>
         <div class="cred-row">
-          <input class="cred-input" id="room-username" placeholder="username" autocomplete="off" spellcheck="false">
-          <input class="cred-input" id="room-password" placeholder="password" autocomplete="off" spellcheck="false">
+          <input class="cred-input" id="room-username" placeholder="e.g. blue-orbit" autocomplete="username" spellcheck="false" aria-label="Room username">
+          <div class="password-wrap"><input class="cred-input" id="room-password" type="password" placeholder="Room password" autocomplete="new-password" aria-label="Room password"><button class="reveal-button" id="toggle-password" type="button" aria-label="Show password" aria-pressed="false">Show</button></div>
         </div>
         <div class="action-row">
-          <button class="secondary-button" id="generate-creds" type="button">🎲 Generate</button>
-          <button class="secondary-button" id="copy-creds" type="button">Copy</button>
+          <button class="secondary-button" id="generate-creds" type="button">✦ Generate pair</button>
+          <button class="secondary-button" id="copy-creds" type="button">Copy details</button>
         </div>
-        <div class="action-row"><button class="primary-button" id="connect-room" style="margin-top:4px"><span>Connect</span><span class="button-arrow">↗</span></button></div>
-        <div class="status-line"><span class="dot" id="room-dot"></span><span id="room-status">Not connected.</span></div>
+        <button class="primary-button" id="connect-room" type="button"><span>Connect devices</span><span class="button-arrow" aria-hidden="true">↗</span></button>
+        <div class="status-line" role="status" aria-live="polite"><span class="dot" id="room-dot"></span><span id="room-status">Ready when you are.</span></div>
       </section>
 
-      <section class="panel hidden" id="live-card">
-        <div class="room-head">
-          <div class="success-label"><span class="live-dot"></span> LIVE CLIPBOARD</div>
-          <button class="link-button" id="disconnect-room" type="button">Disconnect</button>
-        </div>
-        <h2 class="subheading" style="margin-top:14px">Synced instantly, both ways</h2>
-        <textarea class="live-area" id="live-text" placeholder="Type or paste here — it appears on the other device as you type…"></textarea>
+      <section class="panel hidden" id="live-card" aria-labelledby="live-title">
+        <div class="room-head"><div class="panel-kicker"><span class="live-dot"></span> SECURE SESSION ACTIVE</div><button class="link-button" id="disconnect-room" type="button">Disconnect</button></div>
+        <h2 class="subheading" id="live-title">Your shared clipboard</h2>
+        <p class="helper">Anything typed or pasted here syncs to the other connected device.</p>
+        <label class="field-label" for="live-text">LIVE TEXT</label>
+        <textarea class="live-area" id="live-text" placeholder="Type or paste here — it appears on the other device as you type…" aria-label="Shared live clipboard text"></textarea>
         <div class="sync-badge"><span class="dot live"></span> <span id="sync-status">In sync</span></div>
-
-        <h2 class="subheading" style="margin-top:26px">Send a file</h2>
-        <p class="helper">Goes straight to the other device, no size shown until it's picked.</p>
+        <div class="file-transfer-head"><div><h3 class="subheading">Send a file</h3><p class="helper">Transfer up to 500 MB directly to the other browser.</p></div><span class="file-icon" aria-hidden="true">↥</span></div>
+        <label class="field-label" for="send-file">CHOOSE A FILE</label>
         <input class="file-input" id="send-file" type="file">
-        <div class="action-row"><button class="primary-button" id="send-file-button" style="margin-top:4px"><span>Send file</span><span class="button-arrow">↗</span></button></div>
-        <div class="progress"><div id="send-progress"></div></div>
-
-        <div id="received-files" class="file-list"></div>
+        <button class="primary-button" id="send-file-button" type="button"><span>Send file</span><span class="button-arrow" aria-hidden="true">↗</span></button>
+        <div class="progress" role="progressbar" aria-label="File transfer progress" aria-valuemin="0" aria-valuemax="100"><div id="send-progress"></div></div>
+        <div id="received-files" class="file-list" aria-live="polite"></div>
       </section>
     </div>
 
-    <section class="how"><div><span class="step-number">01</span><strong>Set username &amp; password</strong><span>Any values, 6+ characters each, both sides must match.</span></div><div><span class="step-number">02</span><strong>Connect on both</strong><span>Either side can go first — they find each other automatically.</span></div><div><span class="step-number">03</span><strong>Paste, type, send</strong><span>Text syncs live both ways; files transfer directly, browser to browser.</span></div></section>
+    <section class="how" aria-labelledby="how-title">
+      <div class="section-heading"><span class="eyebrow">THREE QUICK STEPS</span><h2 id="how-title">Sharing, without the detour.</h2></div>
+      <div class="steps-grid">
+        <article class="step-card"><span class="step-number">01</span><h3>Choose your room</h3><p>Generate a username and password, or create your own pair. Keep the details handy.</p></article>
+        <article class="step-card"><span class="step-number">02</span><h3>Connect both devices</h3><p>Open Paste Anywhere on each device and connect with the same room details.</p></article>
+        <article class="step-card"><span class="step-number">03</span><h3>Paste or send</h3><p>Text syncs in both directions. Files move directly between browsers while the session is open.</p></article>
+      </div>
+    </section>
+
+    <section class="details-section" aria-labelledby="features-title">
+      <div class="section-heading"><span class="eyebrow">MADE FOR QUICK TRANSFERS</span><h2 id="features-title">A simple way to move things between devices.</h2></div>
+      <div class="feature-grid">
+        <article class="feature-card"><span class="feature-symbol">↔</span><h3>Live clipboard sync</h3><p>Share snippets, links, notes and copied text between two browsers in near real time.</p></article>
+        <article class="feature-card"><span class="feature-symbol">⇧</span><h3>Direct file sharing</h3><p>Send documents, images, audio and other files without first uploading them to this website.</p></article>
+        <article class="feature-card"><span class="feature-symbol">⌁</span><h3>Encrypted connection</h3><p>WebRTC data channels encrypt data in transit between peers. The signaling service is used only to help establish the connection.</p></article>
+        <article class="feature-card"><span class="feature-symbol">◎</span><h3>No account needed</h3><p>Use a temporary room pair instead of creating an account or managing a cloud inbox.</p></article>
+      </div>
+    </section>
+
+    <section class="faq-section" aria-labelledby="faq-title">
+      <div class="section-heading"><span class="eyebrow">GOOD TO KNOW</span><h2 id="faq-title">Frequently asked questions</h2></div>
+      <div class="faq-list">
+        <article><h3>Are my files uploaded or stored?</h3><p>No. File data is sent over the peer-to-peer WebRTC connection and held in browser memory during transfer. The website does not provide file storage.</p></article>
+        <article><h3>Do both devices need the same room details?</h3><p>Yes. Enter the exact same username and password on both devices. Use a unique, hard-to-guess pair and do not reuse an important password.</p></article>
+        <article><h3>Why might a device fail to connect?</h3><p>Some VPNs, restrictive firewalls, mobile networks and NAT configurations block direct peer connections. This version uses STUN but has no TURN relay fallback, so it may not work on every network.</p></article>
+        <article><h3>Can I use it on a phone and a computer?</h3><p>Yes, use a modern browser on both devices. Keep both browser tabs open while syncing text or transferring files.</p></article>
+      </div>
+    </section>
   </main>
-  <footer><span>PASTE ANYWHERE</span><span>WEBRTC · DIRECT P2P · NO FILE SERVER</span></footer>
-  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <script src="app.js"></script>
-</body></html>
+
+  <footer><a class="footer-brand" href="./">PASTE ANYWHERE</a><span>WEBRTC · DIRECT P2P · NO FILE STORAGE</span><span>Keep your room details private.</span></footer>
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>

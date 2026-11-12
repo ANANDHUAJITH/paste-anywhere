@@ -12,7 +12,21 @@ function setStatus(message, state) {
   const dot = $('room-dot');
   dot.className = 'dot' + (state ? ' ' + state : '');
 }
-function setProgress(id, value) { $(id).style.width = `${Math.max(0, Math.min(100, value))}%`; }
+function setProgress(id, value) {
+  const pct = Math.max(0, Math.min(100, value));
+  $(id).style.width = `${pct}%`;
+  const bar = $(id).parentElement;
+  if (bar) bar.setAttribute('aria-valuenow', String(Math.round(pct)));
+}
+
+$('toggle-password').addEventListener('click', () => {
+  const input = $('room-password');
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  $('toggle-password').textContent = showing ? 'Show' : 'Hide';
+  $('toggle-password').setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+  $('toggle-password').setAttribute('aria-pressed', String(!showing));
+});
 
 // The username+password pair is hashed into a short, stable room id. Any two
 // devices that enter the same username & password land on the same room id,
